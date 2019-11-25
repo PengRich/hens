@@ -1,0 +1,21 @@
+stms(1, 1) = stream(180.d0,  75.d0,  30.d0,  2.d0, 0.d0)
+stms(1, 2) = stream(280.d0, 120.d0,  60.d0,  1.d0, 0.d0)
+stms(1, 3) = stream(180.d0,  75.d0,  30.d0,  2.d0, 0.d0)
+stms(1, 4) = stream(140.d0,  40.d0,  30.d0,  1.d0, 0.d0)
+stms(1, 5) = stream(220.d0, 120.d0,  50.d0,  1.d0, 0.d0)
+stms(1, 6) = stream(180.d0,  55.d0,  35.d0,  2.d0, 0.d0)
+stms(1, 7) = stream(200.d0,  60.d0,  30.d0, 0.4d0, 0.d0)
+stms(1, 8) = stream(120.d0,  40.d0, 100.d0, 0.5d0, 0.d0)
+
+stms(2, 1) = stream( 40.d0, 230.d0, 20.d0, 1.d0, 0.d0)
+stms(2, 2) = stream(100.d0, 220.d0, 60.d0, 1.d0, 0.d0)
+stms(2 ,3) = stream( 40.d0, 190.d0, 35.d0, 2.d0, 0.d0)
+stms(2, 4) = stream( 50.d0, 190.d0, 30.d0, 2.d0, 0.d0)
+stms(2, 5) = stream( 50.d0, 250.d0, 60.d0, 2.d0, 0.d0)
+stms(2, 6) = stream( 90.d0, 190.d0, 50.d0, 1.d0, 0.d0)
+stms(2, 7) = stream(160.d0, 250.d0, 60.d0, 3.d0, 0.d0)
+
+ustms(1) = stream(325.d0, 325.d0, 0.d0, 1.d0, 0.d0)
+ustms(2) = stream( 25.d0,  40.d0, 0.d0, 2.d0, 0.d0)
+
+factor = cost_factor(80.d0, 10.d0, 8000.d0, 500.d0, 0.75d0)
