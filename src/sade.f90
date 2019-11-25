@@ -30,6 +30,11 @@ module sade
                 if(r < up .and. r > low) exit
                 low = low + prob_strategy(id)
             enddo
+                if(id==5) then
+                    print *, sum_prob_strategy, low-prob_strategy(4), r, up
+                    stop
+                endif
+
 
         end subroutine get_strategy_id
 
@@ -108,6 +113,7 @@ module sade
             cr_success = 0.5d0
             cf_success = 0.5d0
             prob_strategy = 1.d0 / real(mutator_number)
+            sum_prob_strategy = sum(prob_strategy)
             n_lp = 0
             n_cfr = 1
             cfr_idx = 1
@@ -149,6 +155,7 @@ module sade
                     selected_strategy_record(j) = strategy_id
                     do while(.true.)
                         if(cfr_idx(strategy_id) > n_normal) then
+                            print *, mutator_number, strategy_id, cfr_idx(strategy_id), "here"
                             call generate_normal_rand(n_normal, rn(1), cfm(strategy_id), &
                                 cfs(strategy_id), cf_normals(strategy_id, :)) 
                             call generate_normal_rand(n_normal, rn(1), crm(strategy_id), &
