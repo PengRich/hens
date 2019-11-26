@@ -1,4 +1,5 @@
 module sade 
+    use mpi
     use utility
     use de_base
     implicit none
@@ -82,7 +83,7 @@ module sade
                 sampling_number
             real(kind=8), intent(in) :: qmin, elimination_prob
 
-            integer(kind=4) :: i, j, k, sn, strategy_id, &
+            integer(kind=4) :: i, j, k, m, sn, strategy_id, &
                 selected_strategy_record(np), n_normal
             real(kind=8) :: cf, cr, ep
 
@@ -155,7 +156,6 @@ module sade
                     selected_strategy_record(j) = strategy_id
                     do while(.true.)
                         if(cfr_idx(strategy_id) > n_normal) then
-                            print *, mutator_number, strategy_id, cfr_idx(strategy_id), "here"
                             call generate_normal_rand(n_normal, rn(1), cfm(strategy_id), &
                                 cfs(strategy_id), cf_normals(strategy_id, :)) 
                             call generate_normal_rand(n_normal, rn(1), crm(strategy_id), &
@@ -171,6 +171,7 @@ module sade
                     ! cr = 0.8d0
                     ! cf = 0.5d0
                     ! strategy_id = 1
+                    m = 1
                     do k=1, n_hex
                         select case(strategy_id)
                             case(2)
@@ -190,16 +191,24 @@ module sade
                             case default
                                 v(k, j) = best_to_random_one(np, j, k, cf) 
                         end select
-                        if(v(k,j)<qmin .or. rand(rn(1)) < ep) v(k, j) = 0.d0
+                        ! if(v(k,j)<qmin .or. rand(rn(1)) < ep) v(k, j) = 0.d0
+                        if(v(k,j)<qmin) v(k, j) = 0.d0
+                        if(v(k,j)>0.1d-3) m = m+1
+                    enddo
+
+                    ! eliminate heat exchanger as number prob
+                    ep = real(sum(n_stms)+2) / real(m)
+                    do k=1, n_hex
+                        if(v(k,j)>0.1d-3 .and. rand(rn(1))>ep) v(k, j) = 0.d0
                     enddo
 
                     do k=1, n_hex
                         if(rand(rn(1))<=cr .or. k==int(rand(rn(1))*real(n_hex))+1) u(k, j) = v(k, j)
                     enddo
                     y_new(j) = tac(u(:, j))
-                enddo
+                ! enddo
 
-                do j=1, np
+                ! do j=1, np
                     strategy_id = selected_strategy_record(j)
                     if(y_new(j) < y_old(j)) then
                         y_old(j) = y_new(j)
@@ -291,6 +300,92 @@ module sade
             deallocate(seed)
             return
         end subroutine run_sade
+
+        subroutine mpi_run_sade(case_name, stage, np, max_iter, qmin, &
+                learning_period, sampling_number, elimination_prob)
+            implicit none
+            character(len=*), intent(in) :: case_name
+            integer(kind=4), intent(in) :: stage, max_iter, np, &
+                learning_period, sampling_number
+            real(kind=8), intent(in) :: qmin, elimination_prob
+
+            logical :: exist
+            ! real(kind=8) :: random_state
+            character(len=23) :: filename
+            integer :: values(8), k, i, j, n_open, n_log_file
+            integer, allocatable :: seed(:)
+            ! MPI
+            real :: random_state
+            integer :: node,n_core,ierr,status(mpi_status_size)
+            logical :: Ionode
+            character(len=MPI_MAX_PROCESSOR_NAME) :: hostname
+            integer::namelen
+            character(len=1) :: node0
+            character(len=10) :: perfix
+
+            call MPI_INIT(ierr)
+            call MPI_COMM_RANK(MPI_COMM_WORLD, node, ierr)
+            call MPI_COMM_SIZE(MPI_COMM_WORLD, n_core, ierr)
+            call MPI_GET_PROCESSOR_NAME(hostname, namelen, ierr)
+            n_open = node + 20
+            n_log_file = n_open + 20
+
+            write(node0, '(i1)') node
+
+            filename = "output/"// node0 // "_" // trim(case_name) // "_sade.txt"
+            inquire(file=filename, exist=exist)
+            if (exist) then
+                open(n_open, file=filename, status="old", position="append", action="write")
+            else
+                open(n_open, file=filename, status="new", action="write")
+            end if
+
+            Ionode=(node .eq. 0)
+            if(Ionode) then
+                call date_and_time(values=values)
+                call random_seed(size=k)
+                allocate(seed(1:k))
+                seed(:) = values(8)
+                call random_seed(put=seed)
+                do while(.true.)
+                    call random_number(random_state)
+                    if(random_state > 0.1d0) exit
+                enddo
+                call MPI_SEND(random_state, 1, MPI_INTEGER, 1, 99, &
+                        MPI_COMM_WORLD, ierr)
+            else
+                call MPI_RECV(random_state, 1, MPI_INTEGER, node-1, 99, &
+                    MPI_COMM_WORLD,status,ierr)
+                do while(.true.)
+                    call random_number(random_state)
+                    if(random_state > 0.1d0) exit
+                enddo
+                call random_number(random_state)
+                if(node<n_core-1) then
+                    call MPI_RECV(random_state, 1, MPI_INTEGER, node+1, 99, &
+                        MPI_COMM_WORLD,status,ierr)
+                endif
+            endif
+            rn(1) = dble(random_state)
+            perfix = trim(node0 // "_" // case_name)
+            call get_log_filename(perfix)
+            open(unit=n_log_file, file=log_filename, action="write", status="replace")
+            call init_de(case_name, stage, np)
+            call init_population(np)
+            call evolve(np, max_iter, qmin, learning_period, &
+                sampling_number, elimination_prob)
+            call deallocate_de_var()
+            call deallocate_var()
+            write(*, *) log_filename, dble(random_state), n_hex_global, y_min_global
+            write(n_open, *) log_filename, dble(random_state), n_hex_global, y_min_global
+            deallocate(log_filename)
+            close(n_open)
+            close(n_log_file)
+            call MPI_FINALIZE(ierr)
+
+           if(Ionode) deallocate(seed)
+            return
+        end subroutine mpi_run_sade
 
         ! subroutine evolve_fixed(n, idx_q, np, max_iter, qmin, lp0, prob)
         !     implicit none
