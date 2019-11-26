@@ -156,6 +156,10 @@ module nosplit_simulator
 
             n_st = stage
             select case(case_name)
+                case("4sp1")
+                    n_stms = (/2, 2/)
+                    call allocate_var()
+                    include "4sp1.inc"
                 case("9sp1")
                     n_stms = (/4, 5/)
                     call allocate_var()

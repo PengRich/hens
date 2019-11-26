@@ -97,14 +97,15 @@ module mpi_sade
             character(len=1) :: node0
             character(len=15) :: perfix
             ! Parallel
-            real(kind=8) :: random_state, a(3), b(3)
+            real(kind=8) :: random_state
             integer(kind=4) :: j, k, idx_np, iter_switch, n_switch
-            real(kind=8), allocatable :: x_send(:, :), x_recv(:, :)
+            real(kind=8), allocatable :: x_send(:), x_recv(:)
 
             call MPI_INIT(ierr)
             call MPI_COMM_RANK(MPI_COMM_WORLD, node, ierr)
             call MPI_COMM_SIZE(MPI_COMM_WORLD, n_core, ierr)
             call MPI_GET_PROCESSOR_NAME(hostname, namelen, ierr)
+            print *, "start process", node
             n_open = node + 20
             n_log_file = n_open + 20
             iter_switch = switch_number
@@ -136,12 +137,10 @@ module mpi_sade
             call init_population(np)
 
             n_switch = int(switch_ratio * real(np))
-            n_switch = 0 ! todo 
-            allocate(x_send(n_hex, n_switch+1))
-            allocate(x_recv(n_hex, n_switch+1))
+            allocate(x_send(n_hex*(n_switch+1)))
+            allocate(x_recv(n_hex*(n_switch+1)))
             x_send = 0.0
             x_recv = 0.0
-            print *, n_switch
             do j=1, iter_switch
                 filename = "output/"// node0 // "_para_" // trim(case_name) // "_sade.txt"
                 inquire(file=filename, exist=exist)
@@ -175,17 +174,17 @@ module mpi_sade
 
                 do k=1, n_switch
                     idx_np = int(rand(rn(1))*np)+1
-                    x_send(:, idx_np) = x(:, idx_np)
+                    x_send((k-1)*n_hex+1:k*n_hex) = x(:, idx_np)
                 enddo
-                x_send(:, n_switch+1) = xmin(:, 1)
-                call MPI_SEND(x_send(:, 1), n_hex, MPI_DOUBLE_PRECISION, node_trg, 99, &
-                        MPI_COMM_WORLD, ierr)
+                x_send(n_switch*n_hex+1:(n_switch+1)*n_hex) = xmin(:, 1)
+                call MPI_SEND(x_send, n_hex*(n_switch+1), MPI_DOUBLE_PRECISION, &
+                    node_trg, 99, MPI_COMM_WORLD, ierr)
 
-                call MPI_RECV(x_recv(:, 1), n_hex, MPI_DOUBLE_PRECISION, node_src, 99, &
-                    MPI_COMM_WORLD, status, ierr)
+                call MPI_RECV(x_recv, n_hex*(n_switch+1), MPI_DOUBLE_PRECISION, &
+                    node_src, 99, MPI_COMM_WORLD, status, ierr)
                 do k=1, n_switch+1
                     idx_np = int(rand(rn(1))*np)+1
-                    x(:, idx_np) = x_recv(:, k)
+                    x(:, idx_np) = x_recv((k-1)*n_hex+1:k*n_hex)
                     y_old(idx_np) = tac(x(:, idx_np))
                 enddo
                 ymin = minval(y_old)

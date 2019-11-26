@@ -1,0 +1,28 @@
+# all:
+# f90comp = gfortran
+
+exe_name = para_sade_4sp1
+exe_obj = para_sade_4sp1.o
+exe_file = para_sade_4sp1.f90
+
+path = .
+src = $(path)/src
+mod = $(path)/mod
+obj = $(path)/obj
+inc = $(path)/inc
+case = $(path)/case
+debug = $(path)/debug
+objects = $(obj)/utils.o $(obj)/simulator.o \
+		$(obj)/de_base.o $(obj)/sade.o \
+        $(obj)/mpi_sade.o \
+		$(obj)/$(exe_obj)
+compile = mpifort -J $(mod) -I $(inc)
+
+
+# executable
+$(debug)/$(exe_name): $(objects)
+	$(compile) -o $(debug)/$(exe_name) $(objects)
+
+# obj
+$(obj)/$(exe_obj): $(case)/$(exe_file)
+	$(compile) -c $(case)/$(exe_file) -o $(obj)/$(exe_obj)
