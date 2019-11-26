@@ -14,6 +14,7 @@ case = $(path)/case
 debug = $(path)/debug
 objects = $(obj)/utils.o $(obj)/simulator.o \
 		$(obj)/de_base.o $(obj)/sade.o \
+		$(obj)/mpi_sade.o \
 		$(obj)/$(exe_obj)
 compile = mpifort -J $(mod) -I $(inc)
 
@@ -42,6 +43,8 @@ $(mod)/de_base.mod: $(obj)/de_base.o $(src)/de_base.f90
 $(mod)/sade.mod: $(obj)/sade.o $(src)/sade.f90
 	$(compile) -c $(src)/sade.f90 -o $(obj)/sade.o
 
+$(mod)/mpi_sade.mod: $(obj)/mpi_sade.o $(src)/mpi_sade.f90
+	$(compile) -c $(src)/mpi_sade.f90 -o $(obj)/mpi_sade.o
 
 # obj
 $(obj)/utils.o: $(src)/utils.f90
@@ -55,6 +58,9 @@ $(obj)/de_base.o: $(src)/de_base.f90
 
 $(obj)/sade.o: $(src)/sade.f90
 	$(compile) -c $(src)/sade.f90 -o $(obj)/sade.o
+
+$(obj)/mpi_sade.o: $(src)/mpi_sade.f90
+	$(compile) -c $(src)/mpi_sade.f90 -o $(obj)/mpi_sade.o
 
 $(obj)/$(exe_obj): $(case)/$(exe_file)
 	$(compile) -c $(case)/$(exe_file) -o $(obj)/$(exe_obj)

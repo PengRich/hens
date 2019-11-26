@@ -6,14 +6,16 @@ module sade
     integer(kind=4), parameter :: mutator_number=4, print_number=1000, &
         max_learning_period=1000, max_sampling_number=10000
 
+    real(kind=8), public :: y_min_global
+    integer(kind=4), public :: n_hex_global, n_open, n_log_file
+
     real(kind=8), private, allocatable :: cf_normals(:, :), cr_normals(:, :), &
         cr_success(:, :), cf_success(:, :)
     real(kind=8), private :: start, finish, &
         crm(mutator_number), cfm(mutator_number), &
         crs(mutator_number), cfs(mutator_number), &
-        prob_strategy(mutator_number), sum_prob_strategy, &
-        y_min_global
-    integer(kind=4), private :: lp, n_lp, n_hex_global, &
+        prob_strategy(mutator_number), sum_prob_strategy
+    integer(kind=4), private :: lp, n_lp, &
         success_strategy(mutator_number, max_learning_period), &
         failure_strategy(mutator_number, max_learning_period), &
         n_cfr(mutator_number), cfr_idx(mutator_number)
@@ -194,7 +196,7 @@ module sade
                     if(m > sum(n_stms)+4) then
                         ep = real(min(elimination_number, m-sum(n_stms)-4)) / real(m)
                     else
-                        ep = -1.d0
+                        ep = 1.d0 / real(m)
                     endif
                     do k=1, n_hex
                         if(v(k,j)>0.1d-3 .and. rand(rn(1))<ep) v(k, j) = 0.d0
@@ -257,6 +259,8 @@ module sade
             logical :: exist
             real(kind=8) :: random_state
             character(len=21) :: filename 
+            n_open = 12
+            n_log_file = 13
         
             filename = "output/" // trim(case_name) // "_sade.txt"
             call set_random_seed()
@@ -264,9 +268,9 @@ module sade
             do while(.true.)
                 inquire(file=filename, exist=exist)
                 if (exist) then
-                    open(12, file=filename, status="old", position="append", action="write")
+                    open(n_open, file=filename, status="old", position="append", action="write")
                 else
-                    open(12, file=filename, status="new", action="write")
+                    open(n_open, file=filename, status="new", action="write")
                 end if
 
                 do while(.true.)
@@ -275,7 +279,7 @@ module sade
                 enddo
                 rn(1) = random_state
                 call get_log_filename(case_name)
-                open(unit=13, file=log_filename, action="write", status="replace")
+                open(unit=n_log_file, file=log_filename, action="write", status="replace")
                 call init_de(case_name, stage, np)
                 call init_population(np)
                 call evolve(np, max_iter, qmin, learning_period, &
@@ -283,9 +287,9 @@ module sade
                 call deallocate_de_var()
                 call deallocate_var()
                 write(*, *) log_filename, random_state, n_hex_global, y_min_global 
-                write(12, *) log_filename, random_state, n_hex_global, y_min_global 
-                close(12)
-                close(13)
+                write(n_open, *) log_filename, random_state, n_hex_global, y_min_global 
+                close(n_open)
+                close(n_log_file)
             enddo
 
             return

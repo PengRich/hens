@@ -1,9 +1,9 @@
 # all:
 # f90comp = gfortran
 
-exe_name = mpi_sade_9sp1
-exe_obj = mpi_sade_9sp1.o
-exe_file = mpi_sade_9sp1.f90
+exe_name = mpi_sade_10sp1
+exe_obj = mpi_sade_10sp1.o
+exe_file = mpi_sade_10sp1.f90
 
 path = .
 src = $(path)/src
