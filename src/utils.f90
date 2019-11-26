@@ -39,14 +39,33 @@ module random_numbers
               array(i+1) = std * SQRT(-2.0*LOG(array(i))) * SIN(2*pi*array(i+1)) + mean
               array(i) = temp
             END DO
- 
+            return
         end subroutine generate_normal_rand
+
+        subroutine set_random_seed(v)
+            integer :: values(1:8), k
+            integer, allocatable :: seed(:)
+            integer, optional :: v
+            call date_and_time(values=values)
+            call random_seed(size=k)
+            allocate(seed(1:k))
+
+            if(present(v))then
+                seed(:) = v
+            else
+                seed(:) = values(8)
+            endif
+            call random_seed(put=seed)
+            deallocate(seed)
+            return
+        end subroutine set_random_seed
 
 end module random_numbers
 
 module utility
     implicit none
-    character(len=:), public, allocatable :: log_filename 
+    ! character(len=:), public, allocatable :: log_filename
+    character(len=40), public :: log_filename
     contains
         subroutine get_log_filename(perfix)
             character(len=8)  :: date
@@ -55,22 +74,26 @@ module utility
             character(len=4) :: suffix
             character(len=12) :: f1
             character(len=16) :: f2
-            character(len=*), optional :: perfix 
+            character(len=:), allocatable :: filename
+            character(len=*), optional :: perfix
             ! using keyword arguments
             call date_and_time(DATE=date, TIME=time)
             folder = "log/"
             suffix = ".log"
             if(present(perfix))then
-                allocate(character(len=len(perfix)+21) :: log_filename)
+                allocate(character(len=len(perfix)+21) :: filename)
                 f1 = trim(date) // trim(time)
                 f2 = trim(f1) // suffix
-                log_filename = trim(folder)//trim(perfix)//"_"//trim(f2)
+                filename = trim(folder)//trim(perfix)//"_"//trim(f2)
             else
-                allocate(character(len=20) :: log_filename)
+                allocate(character(len=20) :: filename)
                 f1 = trim(date) // trim(time)
                 f2 = trim(f1) // suffix
-                log_filename = trim(folder) // trim(f2)
+                filename = trim(folder) // trim(f2)
             endif
+            log_filename = filename
+            deallocate(filename)
+            log_filename = trim(log_filename)
         end subroutine get_log_filename
 
         subroutine sort(n, a)

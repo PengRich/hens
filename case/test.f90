@@ -1,4 +1,5 @@
 program test 
+use random_numbers
 use sade
 implicit none
 integer(kind=4), parameter :: n=8
@@ -7,11 +8,28 @@ real(kind=8) :: xt, yt
 real(kind=8), allocatable :: Qs(:)
 
     ! call execute_command_line ("ls")
+    print *, "set seed to 1"
+    call set_random_seed(1)
+    do i=1, 3
+        call random_number(xt)
+        print *, xt
+    enddo
+    call set_random_seed(1)
+    do i=1, 3
+        call random_number(xt)
+        print *, xt
+    enddo
+
+    print *, "not set seed"
+    call set_random_seed()
+    do i=1, 3
+        call random_number(xt)
+        print *, xt
+    enddo
     
     ! test get_log_filename
     call get_log_filename("hello")
     print *, log_filename
-    deallocate(log_filename)
     
     print *, "start point is 0.1"
     xt = 0.1d0
