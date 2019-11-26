@@ -15,10 +15,10 @@ module mpi_sade
             character(len=23) :: filename
             ! MPI
             real :: random_state
-            integer :: node,n_core,ierr,status(mpi_status_size)
+            integer :: node, n_core, ierr, status(mpi_status_size), i
             logical :: Ionode
             character(len=MPI_MAX_PROCESSOR_NAME) :: hostname
-            integer::namelen
+            integer :: namelen
             character(len=1) :: node0
             character(len=10) :: perfix
 
@@ -42,24 +42,21 @@ module mpi_sade
             Ionode=(node .eq. 0)
             if(Ionode) then
                 call set_random_seed()
+                do i=1, n_core-1
+                    do while(.true.)
+                        call random_number(random_state)
+                        if(random_state > 0.1) exit
+                    enddo
+                    call MPI_SSEND(random_state, 1, MPI_INTEGER, i, 99, &
+                            MPI_COMM_WORLD, ierr)
+                enddo
                 do while(.true.)
                     call random_number(random_state)
                     if(random_state > 0.1) exit
                 enddo
-                call MPI_SEND(random_state, 1, MPI_INTEGER, 1, 99, &
-                        MPI_COMM_WORLD, ierr)
             else
-                call MPI_RECV(random_state, 1, MPI_INTEGER, node-1, 99, &
+                call MPI_RECV(random_state, 1, MPI_INTEGER, 0, 99, &
                     MPI_COMM_WORLD,status,ierr)
-                do while(.true.)
-                    call random_number(random_state)
-                    if(random_state > 0.1) exit
-                enddo
-                call random_number(random_state)
-                if(node<n_core-1) then
-                    call MPI_RECV(random_state, 1, MPI_INTEGER, node+1, 99, &
-                        MPI_COMM_WORLD,status,ierr)
-                endif
             endif
             rn(1) = dble(random_state)
             perfix = trim(node0 // "_" // case_name)
