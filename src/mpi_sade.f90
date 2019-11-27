@@ -190,7 +190,7 @@ module mpi_sade
 
             call deallocate_de_var()
             call deallocate_var()
-
+            print *, "node", node, "completed"
             call MPI_FINALIZE(ierr)
             return
         end subroutine run_parallel_sade
