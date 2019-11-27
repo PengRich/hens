@@ -99,7 +99,6 @@ module mpi_sade
             ! Parallel
             real(kind=8) :: random_state
             integer(kind=4) :: j, k, idx_np, iter_switch, n_switch
-            real(kind=8), allocatable :: x_send(:), x_recv(:)
 
             call MPI_INIT(ierr)
             call MPI_COMM_RANK(MPI_COMM_WORLD, node, ierr)
@@ -137,10 +136,6 @@ module mpi_sade
             call init_population(np)
 
             n_switch = int(switch_ratio * real(np))
-            allocate(x_send(n_hex*(n_switch+1)))
-            allocate(x_recv(n_hex*(n_switch+1)))
-            x_send = 0.0
-            x_recv = 0.0
             do j=1, iter_switch
                 filename = "output/"// node0 // "_para_" // trim(case_name) // "_sade.txt"
                 inquire(file=filename, exist=exist)
@@ -172,29 +167,27 @@ module mpi_sade
                     node_src = node - 1
                 endif
 
+                call MPI_SEND(xmin(:, 1), n_hex, MPI_DOUBLE_PRECISION, &
+                    node_trg, 99, MPI_COMM_WORLD, ierr)
+                idx_np = int(rand(rn(1))*np)+1
+                call MPI_RECV(x(:, idx_np), n_hex, MPI_DOUBLE_PRECISION, &
+                    node_src, 99, MPI_COMM_WORLD, status, ierr)
+
                 do k=1, n_switch
                     idx_np = int(rand(rn(1))*np)+1
-                    x_send((k-1)*n_hex+1:k*n_hex) = x(:, idx_np)
-                enddo
-                x_send(n_switch*n_hex+1:(n_switch+1)*n_hex) = xmin(:, 1)
-                call MPI_SEND(x_send, n_hex*(n_switch+1), MPI_DOUBLE_PRECISION, &
-                    node_trg, 99, MPI_COMM_WORLD, ierr)
-
-                call MPI_RECV(x_recv, n_hex*(n_switch+1), MPI_DOUBLE_PRECISION, &
-                    node_src, 99, MPI_COMM_WORLD, status, ierr)
-                do k=1, n_switch+1
+                    call MPI_SEND(x(:, idx_np), n_hex, MPI_DOUBLE_PRECISION, &
+                        node_trg, 99, MPI_COMM_WORLD, ierr)
                     idx_np = int(rand(rn(1))*np)+1
-                    x(:, idx_np) = x_recv((k-1)*n_hex+1:k*n_hex)
-                    y_old(idx_np) = tac(x(:, idx_np))
+                    call MPI_RECV(x(:, idx_np), n_hex, MPI_DOUBLE_PRECISION, &
+                        node_src, 99, MPI_COMM_WORLD, status, ierr)
                 enddo
+
                 ymin = minval(y_old)
                 xmin = x(:, minloc(y_old))
 
                 call MPI_BARRIER(MPI_COMM_WORLD, ierr)
             enddo
 
-            deallocate(x_send)
-            deallocate(x_recv)
             call deallocate_de_var()
             call deallocate_var()
 
