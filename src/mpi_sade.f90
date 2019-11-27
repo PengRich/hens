@@ -26,6 +26,8 @@ module mpi_sade
             call MPI_COMM_RANK(MPI_COMM_WORLD, node, ierr)
             call MPI_COMM_SIZE(MPI_COMM_WORLD, n_core, ierr)
             call MPI_GET_PROCESSOR_NAME(hostname, namelen, ierr)
+
+            call cpu_time(start)
             n_open = node + 20
             n_log_file = n_open + 20
 
@@ -64,12 +66,15 @@ module mpi_sade
             open(unit=n_log_file, file=log_filename, action="write", status="replace")
             call init_de(case_name, stage, np)
             call init_population(np)
-            call init_de_parameter()
-            call evolve(np, max_iter, qmin, learning_period, sampling_number)
+            call init_de_parameter(np, sampling_number)
+            call evolve(np, max_iter, qmin, learning_period)
+            call deallocate_de_parameter()
             call deallocate_de_var()
             call deallocate_var()
+            call cpu_time(finish)
             write(*, *) log_filename, dble(random_state), n_hex_global, y_min_global
-            write(n_open, *) log_filename, dble(random_state), n_hex_global, y_min_global
+            write(n_open, *) log_filename, dble(random_state), n_hex_global, &
+                y_min_global, finish-start
             close(n_open)
             close(n_log_file)
             call MPI_FINALIZE(ierr)
@@ -103,12 +108,23 @@ module mpi_sade
             call MPI_COMM_RANK(MPI_COMM_WORLD, node, ierr)
             call MPI_COMM_SIZE(MPI_COMM_WORLD, n_core, ierr)
             call MPI_GET_PROCESSOR_NAME(hostname, namelen, ierr)
+
+            call cpu_time(start)
             print *, "start process", node
+            write(node0, '(i1)') node
+
+            filename = "output/"// node0 // "_para_" // trim(case_name) // "_sade.txt"
+            inquire(file=filename, exist=exist)
+            if (exist) then
+                open(n_open, file=filename, status="old", position="append", action="write")
+            else
+                open(n_open, file=filename, status="new", action="write")
+            end if
+            close(n_open)
+
             n_open = node + 20
             n_log_file = n_open + 20
             iter_switch = switch_number
-
-            write(node0, '(i1)') node
 
             Ionode=(node .eq. 0)
             if(Ionode) then
@@ -133,26 +149,16 @@ module mpi_sade
 
             call init_de(case_name, stage, np)
             call init_population(np)
-            call init_de_parameter()
+            call init_de_parameter(np, sampling_number)
 
             n_switch = int(switch_ratio * real(np))
+            perfix = trim(node0 // "_para_" // case_name)
             do j=1, iter_switch
-                filename = "output/"// node0 // "_para_" // trim(case_name) // "_sade.txt"
-                inquire(file=filename, exist=exist)
-                if (exist) then
-                    open(n_open, file=filename, status="old", position="append", action="write")
-                else
-                    open(n_open, file=filename, status="new", action="write")
-                end if
-
-                perfix = trim(node0 // "_para_" // case_name)
+                open(n_open, file=filename, status="old", position="append", action="write")
                 call get_log_filename(perfix)
                 open(unit=n_log_file, file=log_filename, action="write", status="replace")
-                call evolve(np, max_iter, qmin, learning_period, sampling_number)
+                call evolve(np, max_iter, qmin, learning_period)
                 close(n_log_file)
-                if(j==1) then
-                    write(n_open, *) dble(random_state)
-                endif
                 write(*, *) node, log_filename, n_hex_global, y_min_global
                 write(n_open, *) log_filename, n_hex_global, y_min_global
                 close(n_open)
@@ -204,11 +210,17 @@ module mpi_sade
                 xmin = x(:, minloc(y_old))
                 ! print *, "node", node, "completed"
                 print *, node, n_recv, n_switch, n_recv/n_switch
-
             enddo
 
+            call deallocate_de_parameter()
             call deallocate_de_var()
             call deallocate_var()
+
+            call cpu_time(finish)
+            filename = "output/"// node0 // "_para_" // trim(case_name) // "_sade.txt"
+            open(n_open, file=filename, status="old", position="append", action="write")
+            write(n_open, *) dble(random_state), finish-start
+            close(n_open)
             call MPI_FINALIZE(ierr)
             return
         end subroutine run_parallel_sade

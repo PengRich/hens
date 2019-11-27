@@ -6,16 +6,15 @@ module sade
     integer(kind=4), parameter :: mutator_number=4, print_number=1000, &
         max_learning_period=1000, max_sampling_number=10000
 
-    real(kind=8), public :: y_min_global
+    real(kind=8), public :: y_min_global, start, finish
     integer(kind=4), public :: n_hex_global, n_open, n_log_file
 
     real(kind=8), private, allocatable :: cf_normals(:, :), cr_normals(:, :), &
         cr_success(:, :), cf_success(:, :)
-    real(kind=8), private :: start, finish, &
-        crm(mutator_number), cfm(mutator_number), &
+    real(kind=8), private :: crm(mutator_number), cfm(mutator_number), &
         crs(mutator_number), cfs(mutator_number), &
         prob_strategy(mutator_number), sum_prob_strategy
-    integer(kind=4), private :: lp, n_lp, &
+    integer(kind=4), private :: lp, n_lp, n_normal, sn, &
         success_strategy(mutator_number, max_learning_period), &
         failure_strategy(mutator_number, max_learning_period), &
         n_cfr(mutator_number), cfr_idx(mutator_number)
@@ -70,36 +69,11 @@ module sade
 
         !     return
         ! end subroutine update_crm
-        subroutine init_de_parameter()
+        subroutine init_de_parameter(np, sampling_number)
             implicit none
-            crm = 0.5d0
-            crs = 0.3d0
-            cfm = 0.5d0
-            cfs = 0.3d0
-            success_strategy = 0
-            failure_strategy = 0
-            prob_strategy = 1.d0 / real(mutator_number)
-            sum_prob_strategy = sum(prob_strategy)
-            n_lp = 0
-            n_cfr = 1
-            cfr_idx = 1
-        end subroutine init_de_parameter
-
-        subroutine evolve(np, max_iter, qmin, learning_period, sampling_number)
-            implicit none
-            integer(kind=4), intent(in) :: np, max_iter, learning_period, &
-                sampling_number
-            real(kind=8), intent(in) :: qmin
-
-            integer(kind=4) :: i, j, k, m, sn, strategy_id, &
-                selected_strategy_record(np), n_normal
-            real(kind=8) :: cf, cr, ep
+            integer(kind=4), intent(in) :: np, sampling_number
 
             n_normal = 2*np
-
-            call cpu_time(start)
-            ! reset parameter
-            lp = min(learning_period, max_learning_period)
             sn = min(sampling_number, max_sampling_number)
 
             ! allocate var
@@ -113,6 +87,39 @@ module sade
             cr_normals = 0.5d0
             cr_success = 0.5d0
             cf_success = 0.5d0
+
+            crm = 0.5d0
+            crs = 0.3d0
+            cfm = 0.5d0
+            cfs = 0.3d0
+            success_strategy = 0
+            failure_strategy = 0
+            prob_strategy = 1.d0 / real(mutator_number)
+            sum_prob_strategy = sum(prob_strategy)
+            n_lp = 0
+            n_cfr = 1
+            cfr_idx = 1
+        end subroutine init_de_parameter
+
+        subroutine deallocate_de_parameter()
+            implicit none
+            deallocate(cf_normals)
+            deallocate(cr_normals)
+            deallocate(cf_success)
+            deallocate(cr_success)
+        end subroutine deallocate_de_parameter
+
+        subroutine evolve(np, max_iter, qmin, learning_period)
+            implicit none
+            integer(kind=4), intent(in) :: np, max_iter, learning_period
+            real(kind=8), intent(in) :: qmin
+
+            integer(kind=4) :: i, j, k, m, sn, strategy_id, &
+                selected_strategy_record(np)
+            real(kind=8) :: cf, cr, ep
+
+            ! reset parameter
+            lp = min(learning_period, max_learning_period)
 
             ! start iterate
             do i=1, max_iter
@@ -256,12 +263,7 @@ module sade
 
             enddo
 
-            call cpu_time(finish)
             include 'print_sade_result.inc'
-            deallocate(cf_normals)
-            deallocate(cr_normals)
-            deallocate(cf_success)
-            deallocate(cr_success)
             return
         end subroutine evolve
 
@@ -283,6 +285,7 @@ module sade
             call set_random_seed()
 
             do while(.true.)
+                call cpu_time(start)
                 inquire(file=filename, exist=exist)
                 if (exist) then
                     open(n_open, file=filename, status="old", position="append", action="write")
@@ -299,16 +302,21 @@ module sade
                 open(unit=n_log_file, file=log_filename, action="write", status="replace")
                 call init_de(case_name, stage, np)
                 call init_population(np)
-                call init_de_parameter()
-                call evolve(np, max_iter, qmin, learning_period, sampling_number)
+                call init_de_parameter(np, sampling_number)
+                call evolve(np, max_iter, qmin, learning_period)
+                call deallocate_de_parameter()
                 call deallocate_de_var()
                 call deallocate_var()
-                write(*, *) log_filename, random_state, n_hex_global, y_min_global 
-                write(n_open, *) log_filename, random_state, n_hex_global, y_min_global 
-                close(n_open)
+                call cpu_time(finish)
                 close(n_log_file)
+                write(*, *) log_filename, random_state, n_hex_global, y_min_global 
+                write(n_open, *) log_filename, random_state, n_hex_global, &
+                    y_min_global, finish-start
+                close(n_open)
             enddo
 
+            write(n_log_file, '("Time =", f10.1)') finish-start
+            write(*, '("Time =", f10.1)') finish-start
             return
         end subroutine run_sade
 end module sade 

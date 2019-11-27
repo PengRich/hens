@@ -8,9 +8,7 @@ enddo
 n_hex_global = j
 y_min_global = ymin
 write(*, '("ymin =", f15.3)') ymin
-write(*, '("Time =", f10.1)') finish-start
 write(n_log_file, '("ymin =", f15.3)') ymin
-write(n_log_file, '("Time =", f10.1)') finish-start
 write(*, *) "p", prob_strategy, sum(prob_strategy)
 write(*, *) "crm", crm
 write(*, *) "crs", crs
