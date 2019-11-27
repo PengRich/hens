@@ -169,26 +169,27 @@ module mpi_sade
                     node_src = node - 1
                 endif
 
-                idx_best = minloc(y_old)
+                ! idx_best = minloc(y_old)
 
-                call MPI_SEND(xmin(:, 1), n_hex, MPI_DOUBLE_PRECISION, &
-                    node_trg, 99, MPI_COMM_WORLD, ierr)
-                do while(.true.)
-                    idx_np = int(rand(rn(1))*np)+1
-                    if(idx_np==idx_best(1)) cycle
-                    exit
-                enddo
-                call MPI_RECV(x(:, idx_np), n_hex, MPI_DOUBLE_PRECISION, &
-                    node_src, 99, MPI_COMM_WORLD, status, ierr)
-                y_old(idx_np) = tac(x(:, idx_np))
-                call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+                ! call MPI_SEND(xmin(:, 1), n_hex, MPI_DOUBLE_PRECISION, &
+                !     node_trg, 99, MPI_COMM_WORLD, ierr)
+                ! do while(.true.)
+                !     idx_np = int(rand(rn(1))*np)+1
+                !     if(idx_np==idx_best(1)) cycle
+                !     exit
+                ! enddo
+                ! call MPI_RECV(x(:, idx_np), n_hex, MPI_DOUBLE_PRECISION, &
+                !     node_src, 99, MPI_COMM_WORLD, status, ierr)
+                ! y_old(idx_np) = tac(x(:, idx_np))
+                ! call MPI_BARRIER(MPI_COMM_WORLD, ierr)
 
                 do k=1, n_switch
-                    do while(.true.)
-                        idx_np = int(rand(rn(1))*np)+1
-                        if(idx_np==idx_best(1)) cycle
-                        exit
-                    enddo
+                    ! do while(.true.)
+                    !     idx_np = int(rand(rn(1))*np)+1
+                    !     if(idx_np==idx_best(1)) cycle
+                    !     exit
+                    ! enddo
+                    idx_np = int(rand(rn(1))*np)+1
                     call MPI_SEND(x(:, idx_np), n_hex, MPI_DOUBLE_PRECISION, &
                         node_trg, 99, MPI_COMM_WORLD, ierr)
                     ! idx_np = int(rand(rn(1))*np)+1
