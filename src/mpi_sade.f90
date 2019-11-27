@@ -151,9 +151,11 @@ module mpi_sade
                 call evolve(np, max_iter, qmin, learning_period, &
                     sampling_number, elimination_number)
                 close(n_log_file)
-
-                write(*, *) node, log_filename, dble(random_state), n_hex_global, y_min_global
-                write(n_open, *) log_filename, dble(random_state), n_hex_global, y_min_global
+                if(j==1) then
+                    write(n_open, *) dble(random_state)
+                endif
+                write(*, *) node, log_filename, n_hex_global, y_min_global
+                write(n_open, *) log_filename, n_hex_global, y_min_global
                 close(n_open)
 
                 if(node<n_core-1) then
@@ -198,7 +200,7 @@ module mpi_sade
 
                 ymin = minval(y_old)
                 xmin = x(:, minloc(y_old))
-                print *, "node", node, "completed"
+                ! print *, "node", node, "completed"
 
             enddo
 
