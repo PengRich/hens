@@ -98,7 +98,7 @@ module mpi_sade
             character(len=15) :: perfix
             ! Parallel
             real(kind=8) :: random_state
-            integer(kind=4) :: j, k, idx_np, iter_switch, n_switch
+            integer(kind=4) :: j, k, idx_np, idx_best(1), iter_switch, n_switch
 
             call MPI_INIT(ierr)
             call MPI_COMM_RANK(MPI_COMM_WORLD, node, ierr)
@@ -167,13 +167,13 @@ module mpi_sade
                     node_src = node - 1
                 endif
 
-                i = minloc(y_old)
+                idx_best = minloc(y_old)
 
                 call MPI_SEND(xmin(:, 1), n_hex, MPI_DOUBLE_PRECISION, &
                     node_trg, 99, MPI_COMM_WORLD, ierr)
                 do while(.true.)
                     idx_np = int(rand(rn(1))*np)+1
-                    if(idx_np==i) cycle
+                    if(idx_np==idx_best(1)) cycle
                     exit
                 enddo
                 call MPI_RECV(x(:, idx_np), n_hex, MPI_DOUBLE_PRECISION, &
@@ -184,7 +184,7 @@ module mpi_sade
                 do k=1, n_switch
                     do while(.true.)
                         idx_np = int(rand(rn(1))*np)+1
-                        if(idx_np==i) cycle
+                        if(idx_np==idx_best(1)) cycle
                         exit
                     enddo
                     call MPI_SEND(x(:, idx_np), n_hex, MPI_DOUBLE_PRECISION, &
