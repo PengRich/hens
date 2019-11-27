@@ -98,7 +98,8 @@ module mpi_sade
             character(len=15) :: perfix
             ! Parallel
             real(kind=8) :: random_state
-            integer(kind=4) :: j, k, idx_np, idx_best(1), iter_switch, n_switch
+            integer(kind=4) :: j, k, idx_np, idx_best(1), iter_switch, &
+                n_switch, n_recv
 
             call MPI_INIT(ierr)
             call MPI_COMM_RANK(MPI_COMM_WORLD, node, ierr)
@@ -182,7 +183,7 @@ module mpi_sade
                 !     node_src, 99, MPI_COMM_WORLD, status, ierr)
                 ! y_old(idx_np) = tac(x(:, idx_np))
                 ! call MPI_BARRIER(MPI_COMM_WORLD, ierr)
-
+                n_recv = 0
                 do k=1, n_switch
                     ! do while(.true.)
                     !     idx_np = int(rand(rn(1))*np)+1
@@ -196,12 +197,15 @@ module mpi_sade
                     call MPI_RECV(x(:, idx_np), n_hex, MPI_DOUBLE_PRECISION, &
                         node_src, 99, MPI_COMM_WORLD, status, ierr)
                     y_old(idx_np) = tac(x(:, idx_np))
+                    do i=1, n_hex
+                        if(x(i, idx_np)>0.d0) n_recv = n_recv + 1
+                    enddo
                     call MPI_BARRIER(MPI_COMM_WORLD, ierr)
                 enddo
-
                 ymin = minval(y_old)
                 xmin = x(:, minloc(y_old))
                 ! print *, "node", node, "completed"
+                print *, node, n_recv, n_switch, n_recv/n_switch
 
             enddo
 
