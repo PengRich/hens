@@ -198,6 +198,7 @@ module sade
                     else
                         ep = 1.d0 / real(m)
                     endif
+                    ep = max(0.05d0, min(0.3d0, ep))
                     do k=1, n_hex
                         if(v(k,j)>0.1d-3 .and. rand(rn(1))<ep) v(k, j) = 0.d0
                     enddo
