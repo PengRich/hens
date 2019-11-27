@@ -220,6 +220,28 @@ module mpi_sade
             open(n_open, file=filename, status="old", position="append", action="write")
             write(n_open, *) dble(random_state), finish-start
             close(n_open)
+
+            call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+            if(Ionode) then
+                filename = "output/"// "s_para_" // trim(case_name) // "_sade.txt"
+                inquire(file=filename, exist=exist)
+                if (exist) then
+                    open(n_open, file=filename, status="old", position="append", action="write")
+                else
+                    open(n_open, file=filename, status="new", action="write")
+                end if
+                write(n_open, *) 0, y_min_global
+                do i=1, n_core-1
+                    call MPI_RECV(y_min_global, 1, MPI_DOUBLE_PRECISION, &
+                        i, 99, MPI_COMM_WORLD, status, ierr)
+                    write(n_open, *) i, y_min_global
+                enddo
+                close(n_open)
+            else
+                call MPI_SEND(y_min_global, 1, MPI_DOUBLE_PRECISION, &
+                    0, 99, MPI_COMM_WORLD, ierr)
+            endif
+ 
             call MPI_FINALIZE(ierr)
             return
         end subroutine run_parallel_sade
