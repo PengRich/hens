@@ -70,6 +70,20 @@ module sade
 
         !     return
         ! end subroutine update_crm
+        subroutine init_de_parameter()
+            implicit none
+            crm = 0.5d0
+            crs = 0.3d0
+            cfm = 0.5d0
+            cfs = 0.3d0
+            success_strategy = 0
+            failure_strategy = 0
+            prob_strategy = 1.d0 / real(mutator_number)
+            sum_prob_strategy = sum(prob_strategy)
+            n_lp = 0
+            n_cfr = 1
+            cfr_idx = 1
+        end subroutine init_de_parameter
 
         subroutine evolve(np, max_iter, qmin, learning_period, sampling_number)
             implicit none
@@ -97,20 +111,8 @@ module sade
             ! init parameter
             cf_normals = 0.3d0
             cr_normals = 0.5d0
-
-            crm = 0.5d0
-            crs = 0.3d0
-            cfm = 0.5d0
-            cfs = 0.3d0
-            success_strategy = 0
-            failure_strategy = 0
             cr_success = 0.5d0
             cf_success = 0.5d0
-            prob_strategy = 1.d0 / real(mutator_number)
-            sum_prob_strategy = sum(prob_strategy)
-            n_lp = 0
-            n_cfr = 1
-            cfr_idx = 1
 
             ! start iterate
             do i=1, max_iter
@@ -292,6 +294,7 @@ module sade
                 open(unit=n_log_file, file=log_filename, action="write", status="replace")
                 call init_de(case_name, stage, np)
                 call init_population(np)
+                call init_de_parameter()
                 call evolve(np, max_iter, qmin, learning_period, sampling_number)
                 call deallocate_de_var()
                 call deallocate_var()

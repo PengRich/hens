@@ -64,6 +64,7 @@ module mpi_sade
             open(unit=n_log_file, file=log_filename, action="write", status="replace")
             call init_de(case_name, stage, np)
             call init_population(np)
+            call init_de_parameter()
             call evolve(np, max_iter, qmin, learning_period, sampling_number)
             call deallocate_de_var()
             call deallocate_var()
@@ -132,6 +133,7 @@ module mpi_sade
 
             call init_de(case_name, stage, np)
             call init_population(np)
+            call init_de_parameter()
 
             n_switch = int(switch_ratio * real(np))
             do j=1, iter_switch
