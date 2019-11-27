@@ -189,6 +189,8 @@ module mpi_sade
                 enddo
                 ymin = minval(y_old)
                 xmin = x(:, minloc(y_old))
+
+                call MPI_BARRIER(MPI_COMM_WORLD, ierr)
             enddo
 
             deallocate(x_send)
