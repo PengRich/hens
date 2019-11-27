@@ -114,7 +114,7 @@ module sade
             integer(kind=4), intent(in) :: np, max_iter, learning_period
             real(kind=8), intent(in) :: qmin
 
-            integer(kind=4) :: i, j, k, m, sn, strategy_id, &
+            integer(kind=4) :: i, j, k, m, strategy_id, &
                 selected_strategy_record(np)
             real(kind=8) :: cf, cr, ep
 

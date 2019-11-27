@@ -217,7 +217,6 @@ module mpi_sade
             call deallocate_var()
 
             call cpu_time(finish)
-            filename = "output/"// node0 // "_para_" // trim(case_name) // "_sade.txt"
             open(n_open, file=filename, status="old", position="append", action="write")
             write(n_open, *) dble(random_state), finish-start
             close(n_open)
