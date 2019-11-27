@@ -172,6 +172,8 @@ module mpi_sade
                 idx_np = int(rand(rn(1))*np)+1
                 call MPI_RECV(x(:, idx_np), n_hex, MPI_DOUBLE_PRECISION, &
                     node_src, 99, MPI_COMM_WORLD, status, ierr)
+                y_old(idx_np) = tac(x(:, idx_np))
+                call MPI_BARRIER(MPI_COMM_WORLD, ierr)
 
                 do k=1, n_switch
                     idx_np = int(rand(rn(1))*np)+1
@@ -180,17 +182,18 @@ module mpi_sade
                     idx_np = int(rand(rn(1))*np)+1
                     call MPI_RECV(x(:, idx_np), n_hex, MPI_DOUBLE_PRECISION, &
                         node_src, 99, MPI_COMM_WORLD, status, ierr)
+                    y_old(idx_np) = tac(x(:, idx_np))
+                    call MPI_BARRIER(MPI_COMM_WORLD, ierr)
                 enddo
 
                 ymin = minval(y_old)
                 xmin = x(:, minloc(y_old))
+                print *, "node", node, "completed"
 
-                call MPI_BARRIER(MPI_COMM_WORLD, ierr)
             enddo
 
             call deallocate_de_var()
             call deallocate_var()
-            print *, "node", node, "completed"
             call MPI_FINALIZE(ierr)
             return
         end subroutine run_parallel_sade
