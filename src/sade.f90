@@ -208,7 +208,7 @@ module sade
                         if(rand(rn(1))<=cr .or. k==int(rand(rn(1))*real(n_hex))+1) u(k, j) = v(k, j)
                         if(u(k, j)>1.d-3) m = m + 1
                     enddo
-                    ep = real(sum(n_stms)+2+4) / real(m)
+                    ep = min(0.9d0, real(sum(n_stms)+2+4) / real(m))
                     do k=1, n_hex
                         if(u(k, j)>qmin) then
                             if(rand(rn(1))>ep) u(k,j) = 0.d0
