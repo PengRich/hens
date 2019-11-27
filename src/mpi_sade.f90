@@ -170,20 +170,20 @@ module mpi_sade
 
                 call MPI_SEND(xmin(:, 1), n_hex, MPI_DOUBLE_PRECISION, &
                     node_trg, 99, MPI_COMM_WORLD, ierr)
-                do while(.true.)
-                    idx_best0 = int(rand(rn(1))*np)+1
-                    if(idx_best0==idx_best(1)) cycle
-                    exit
-                enddo
-                call MPI_RECV(x(:, idx_best0), n_hex, MPI_DOUBLE_PRECISION, &
+                ! do while(.true.)
+                !     idx_best0 = int(rand(rn(1))*np)+1
+                !     if(idx_best0==idx_best(1)) cycle
+                !     exit
+                ! enddo
+                call MPI_RECV(x(:, idx_best(1)), n_hex, MPI_DOUBLE_PRECISION, &
                     node_src, 99, MPI_COMM_WORLD, status, ierr)
-                y_old(idx_best0) = tac(x(:, idx_best0))
+                y_old(idx_best(1)) = tac(x(:, idx_best(1)))
                 call MPI_BARRIER(MPI_COMM_WORLD, ierr)
                 n_recv = 0
                 do k=1, n_switch
                     do while(.true.)
                         idx_np = int(rand(rn(1))*np)+1
-                        if(idx_np==idx_best(1) .or. idx_np==idx_best0) cycle
+                        if(idx_np==idx_best(1)) cycle
                         exit
                     enddo
                     ! idx_np = int(rand(rn(1))*np)+1
