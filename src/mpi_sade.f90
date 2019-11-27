@@ -4,11 +4,11 @@ module mpi_sade
     implicit none
     contains
         subroutine mpi_run_sade(case_name, stage, np, max_iter, qmin, &
-                learning_period, sampling_number, elimination_number)
+                learning_period, sampling_number)
             implicit none
             character(len=*), intent(in) :: case_name
             integer(kind=4), intent(in) :: stage, max_iter, np, &
-                learning_period, sampling_number, elimination_number
+                learning_period, sampling_number
             real(kind=8), intent(in) :: qmin !, elimination_prob
 
             logical :: exist
@@ -64,8 +64,7 @@ module mpi_sade
             open(unit=n_log_file, file=log_filename, action="write", status="replace")
             call init_de(case_name, stage, np)
             call init_population(np)
-            call evolve(np, max_iter, qmin, learning_period, &
-                sampling_number, elimination_number)
+            call evolve(np, max_iter, qmin, learning_period, sampling_number)
             call deallocate_de_var()
             call deallocate_var()
             write(*, *) log_filename, dble(random_state), n_hex_global, y_min_global
@@ -77,13 +76,11 @@ module mpi_sade
         end subroutine mpi_run_sade
 
         subroutine run_parallel_sade(case_name, stage, np, max_iter, qmin, &
-                learning_period, sampling_number, elimination_number, &
-                switch_number, switch_ratio)
+                learning_period, sampling_number, switch_number, switch_ratio)
             implicit none
             character(len=*), intent(in) :: case_name
             integer(kind=4), intent(in) :: stage, max_iter, np, &
-                learning_period, sampling_number, elimination_number, &
-                switch_number
+                learning_period, sampling_number, switch_number
             real(kind=8), intent(in) :: qmin, switch_ratio !, elimination_prob
 
             logical :: exist
@@ -98,8 +95,8 @@ module mpi_sade
             character(len=15) :: perfix
             ! Parallel
             real(kind=8) :: random_state
-            integer(kind=4) :: j, k, idx_np, idx_best(1), iter_switch, &
-                n_switch, n_recv
+            integer(kind=4) :: j, k, idx_np, idx_best(1), idx_best0, &
+                iter_switch, n_switch, n_recv
 
             call MPI_INIT(ierr)
             call MPI_COMM_RANK(MPI_COMM_WORLD, node, ierr)
@@ -149,8 +146,7 @@ module mpi_sade
                 perfix = trim(node0 // "_para_" // case_name)
                 call get_log_filename(perfix)
                 open(unit=n_log_file, file=log_filename, action="write", status="replace")
-                call evolve(np, max_iter, qmin, learning_period, &
-                    sampling_number, elimination_number)
+                call evolve(np, max_iter, qmin, learning_period, sampling_number)
                 close(n_log_file)
                 if(j==1) then
                     write(n_open, *) dble(random_state)
@@ -170,27 +166,27 @@ module mpi_sade
                     node_src = node - 1
                 endif
 
-                ! idx_best = minloc(y_old)
+                idx_best = minloc(y_old)
 
-                ! call MPI_SEND(xmin(:, 1), n_hex, MPI_DOUBLE_PRECISION, &
-                !     node_trg, 99, MPI_COMM_WORLD, ierr)
-                ! do while(.true.)
-                !     idx_np = int(rand(rn(1))*np)+1
-                !     if(idx_np==idx_best(1)) cycle
-                !     exit
-                ! enddo
-                ! call MPI_RECV(x(:, idx_np), n_hex, MPI_DOUBLE_PRECISION, &
-                !     node_src, 99, MPI_COMM_WORLD, status, ierr)
-                ! y_old(idx_np) = tac(x(:, idx_np))
-                ! call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+                call MPI_SEND(xmin(:, 1), n_hex, MPI_DOUBLE_PRECISION, &
+                    node_trg, 99, MPI_COMM_WORLD, ierr)
+                do while(.true.)
+                    idx_best0 = int(rand(rn(1))*np)+1
+                    if(idx_best0==idx_best(1)) cycle
+                    exit
+                enddo
+                call MPI_RECV(x(:, idx_best0), n_hex, MPI_DOUBLE_PRECISION, &
+                    node_src, 99, MPI_COMM_WORLD, status, ierr)
+                y_old(idx_best0) = tac(x(:, idx_best0))
+                call MPI_BARRIER(MPI_COMM_WORLD, ierr)
                 n_recv = 0
                 do k=1, n_switch
-                    ! do while(.true.)
-                    !     idx_np = int(rand(rn(1))*np)+1
-                    !     if(idx_np==idx_best(1)) cycle
-                    !     exit
-                    ! enddo
-                    idx_np = int(rand(rn(1))*np)+1
+                    do while(.true.)
+                        idx_np = int(rand(rn(1))*np)+1
+                        if(idx_np==idx_best(1) .or. idx_np==idx_best0) cycle
+                        exit
+                    enddo
+                    ! idx_np = int(rand(rn(1))*np)+1
                     call MPI_SEND(x(:, idx_np), n_hex, MPI_DOUBLE_PRECISION, &
                         node_trg, 99, MPI_COMM_WORLD, ierr)
                     ! idx_np = int(rand(rn(1))*np)+1

@@ -71,12 +71,11 @@ module sade
         !     return
         ! end subroutine update_crm
 
-        subroutine evolve(np, max_iter, qmin, learning_period, sampling_number, &
-                elimination_number)
+        subroutine evolve(np, max_iter, qmin, learning_period, sampling_number)
             implicit none
             integer(kind=4), intent(in) :: np, max_iter, learning_period, &
-                sampling_number, elimination_number
-            real(kind=8), intent(in) :: qmin !, elimination_prob
+                sampling_number
+            real(kind=8), intent(in) :: qmin
 
             integer(kind=4) :: i, j, k, m, sn, strategy_id, &
                 selected_strategy_record(np), n_normal
@@ -88,7 +87,6 @@ module sade
             ! reset parameter
             lp = min(learning_period, max_learning_period)
             sn = min(sampling_number, max_sampling_number)
-            ! ep = min(1.d0, max(0.d0, elimination_prob))
 
             ! allocate var
             allocate(cf_normals(mutator_number, n_normal))
@@ -166,7 +164,7 @@ module sade
                     ! cr = 0.8d0
                     ! cf = 0.5d0
                     ! strategy_id = 1
-                    m = 1
+                    ! m = 1
                     do k=1, n_hex
                         select case(strategy_id)
                             case(2)
@@ -187,25 +185,36 @@ module sade
                                 v(k, j) = best_to_random_one(np, j, k, cf) 
                         end select
                         ! if(v(k,j)<qmin .or. rand(rn(1)) < ep) v(k, j) = 0.d0
-                        if(v(k,j)<qmin) v(k, j) = 0.d0
-                        if(v(k,j)>0.1d-3) m = m+1
+                        ! if(v(k,j)<qmin) v(k, j) = 0.d0
+                        ! if(v(k,j)>0.1d-3) m = m+1
                     enddo
 
                     ! eliminate heat exchanger as number prob
-                    ! ep = real(sum(n_stms)+2) / real(m)
-                    if(m > sum(n_stms)+4) then
-                        ep = real(min(elimination_number, m-sum(n_stms)-4)) / real(m)
-                    else
-                        ep = 1.d0 / real(m)
-                    endif
-                    ep = max(0.05d0, min(0.3d0, ep))
-                    do k=1, n_hex
-                        if(v(k,j)>0.1d-3 .and. rand(rn(1))<ep) v(k, j) = 0.d0
-                    enddo
+                    ! ep = real(sum(n_stms)+4) / real(m)
+                    ! if(m > sum(n_stms)+4) then
+                    !     ep = real(min(elimination_number, m-sum(n_stms)-4)) / real(m)
+                    ! else
+                    !     ep = 1.d0 / real(m)
+                    ! endif
+                    ! ep = max(0.05d0, min(0.3d0, ep))
+                    ! do k=1, n_hex
+                    !     if(v(k,j)>0.1d-3 .and. rand(rn(1))<ep) v(k, j) = 0.d0
+                    ! enddo
 
+                    m = 0
                     do k=1, n_hex
                         if(rand(rn(1))<=cr .or. k==int(rand(rn(1))*real(n_hex))+1) u(k, j) = v(k, j)
+                        if(u(k, j)>1.d-3) m = m + 1
                     enddo
+                    ep = real(sum(n_stms)+2+4) / real(m)
+                    do k=1, n_hex
+                        if(u(k, j)>qmin) then
+                            if(rand(rn(1))>ep) u(k,j) = 0.d0
+                        else
+                            u(k,j) = 0.d0
+                        endif
+                    enddo
+
                     y_new(j) = tac(u(:, j))
                 ! enddo
 
@@ -250,11 +259,11 @@ module sade
         end subroutine evolve
 
         subroutine run_sade(case_name, stage, np, max_iter, qmin, &
-                learning_period, sampling_number, elimination_number)
+                learning_period, sampling_number)
             implicit none
             character(len=*), intent(in) :: case_name
             integer(kind=4), intent(in) :: stage, max_iter, np, &
-                learning_period, sampling_number, elimination_number
+                learning_period, sampling_number
             real(kind=8), intent(in) :: qmin !, elimination_prob 
             
             logical :: exist
@@ -283,8 +292,7 @@ module sade
                 open(unit=n_log_file, file=log_filename, action="write", status="replace")
                 call init_de(case_name, stage, np)
                 call init_population(np)
-                call evolve(np, max_iter, qmin, learning_period, &
-                    sampling_number, elimination_number)
+                call evolve(np, max_iter, qmin, learning_period, sampling_number)
                 call deallocate_de_var()
                 call deallocate_var()
                 write(*, *) log_filename, random_state, n_hex_global, y_min_global 
