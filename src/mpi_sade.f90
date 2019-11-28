@@ -82,12 +82,13 @@ module mpi_sade
         end subroutine mpi_run_sade
 
         subroutine run_parallel_sade(case_name, stage, np, max_iter, qmin, &
-                learning_period, sampling_number, switch_number, switch_ratio)
+                learning_period, sampling_number, switch_number, switch_ratio, &
+                reinit_ratio)
             implicit none
             character(len=*), intent(in) :: case_name
             integer(kind=4), intent(in) :: stage, max_iter, np, &
                 learning_period, sampling_number, switch_number
-            real(kind=8), intent(in) :: qmin, switch_ratio !, elimination_prob
+            real(kind=8), intent(in) :: qmin, switch_ratio, reinit_ratio
 
             logical :: exist
             character(len=28) :: filename
@@ -101,7 +102,7 @@ module mpi_sade
             character(len=15) :: perfix
             ! Parallel
             real(kind=8) :: random_state
-            integer(kind=4) :: j, k, idx_np, idx_best(1), idx_best0, &
+            integer(kind=4) :: j, k, idx_np, idx_best(1), &
                 iter_switch, n_switch, n_recv
 
             call MPI_INIT(ierr)
@@ -176,13 +177,8 @@ module mpi_sade
 
                 idx_best = minloc(y_old)
 
-                call MPI_SEND(xmin(:, 1), n_hex, MPI_DOUBLE_PRECISION, &
+                call MPI_SEND(x(:, idx_best(1)), n_hex, MPI_DOUBLE_PRECISION, &
                     node_trg, 99, MPI_COMM_WORLD, ierr)
-                ! do while(.true.)
-                !     idx_best0 = int(rand(rn(1))*np)+1
-                !     if(idx_best0==idx_best(1)) cycle
-                !     exit
-                ! enddo
                 call MPI_RECV(x(:, idx_best(1)), n_hex, MPI_DOUBLE_PRECISION, &
                     node_src, 99, MPI_COMM_WORLD, status, ierr)
                 y_old(idx_best(1)) = tac(x(:, idx_best(1)))
@@ -206,10 +202,11 @@ module mpi_sade
                     enddo
                     call MPI_BARRIER(MPI_COMM_WORLD, ierr)
                 enddo
-                ymin = minval(y_old)
-                xmin = x(:, minloc(y_old))
+                call reinit_population(np, idx_best(1), reinit_ratio)
+                ! ymin = minval(y_old)
+                ! xmin = x(:, minloc(y_old))
                 ! print *, "node", node, "completed"
-                print *, node, n_recv, n_switch, n_recv/n_switch
+                ! print *, node, n_recv, n_switch, n_recv/n_switch
             enddo
 
             call deallocate_de_parameter()

@@ -89,6 +89,69 @@ module de_base
             deallocate(match_number)
         end subroutine init_population
 
+        subroutine reinit_population(np, best_id, reinit_ratio)
+            implicit none
+            integer(kind=4), intent(in) :: np, best_id
+            real(kind=8), intent(in) :: reinit_ratio
+            integer(kind=4) :: hs, cs, st, max_try, reinit_number, m
+            ! real(kind=8), private :: rn(3)=0.1d0
+
+            max_match_number = int(maxval(n_stms)+1)
+            p_ex = real(sum(n_stms)+2) / real(n_hex)
+            allocate(ptnl(2, maxval(n_stms)))
+            allocate(match_number(2, maxval(n_stms)))
+
+            reinit_number = int(np*reinit_ratio)
+
+            do m=1, reinit_number
+                do while(.true.)
+                    i = int(rand(rn(1))*np) + 1
+                    if(i==best_id) cycle
+                    exit
+                enddo
+                x(:, i) = 0.d0
+                match_number = 0
+                ptnl = stms%ptnl
+
+                k = 0
+                do j=1, n_hex
+                    if(rand(rn(1))<p_ex) k = k + 1
+                enddo
+
+                max_try = 0
+                do while(k > 0)
+                    hs = int(rand(rn(1))*n_stms(1)+1)
+                    cs = int(rand(rn(1))*n_stms(2)+1)
+                    st = int(rand(rn(1))*n_st+1)
+                    j = unit_id(hs, cs, st)
+                    if(abs(x(j, i)) > 1.d-3) cycle
+                    if(max_try < 1000) then
+                        if(match_number(1, idx(j)%hstm_id) > max_match_number) cycle
+                        if(match_number(2, idx(j)%cstm_id) > max_match_number) cycle
+                    ! else:
+                    !    max_try = 0
+                    endif
+
+                    match_number(1, idx(j)%hstm_id) = match_number(1, idx(j)%hstm_id) + 1
+                    match_number(2, idx(j)%cstm_id) = match_number(2, idx(j)%cstm_id) + 1
+
+                    x(j, i) = max(1.d0, rand(rn(1))*(min(ptnl(1, idx(j)%hstm_id), ptnl(2, idx(j)%cstm_id))))
+                    ptnl(1, idx(j)%hstm_id) = ptnl(1, idx(j)%hstm_id) - x(j, i)
+                    ptnl(2, idx(j)%cstm_id) = ptnl(2, idx(j)%cstm_id) - x(j, i)
+
+                    k = k - 1
+                    max_try = max_try + 1
+                enddo
+                y_old(i) = tac(x(:, i))
+            enddo
+
+            ymin = minval(y_old)
+            xmin = x(:, minloc(y_old))
+
+            deallocate(ptnl)
+            deallocate(match_number)
+        end subroutine reinit_population
+
         subroutine deallocate_de_var
             implicit none
             deallocate(y_old)
