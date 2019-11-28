@@ -125,7 +125,7 @@ module mpi_sade
 
             n_open = node + 20
             n_log_file = n_open + 20
-            iter_switch = switch_number
+            iter_switch = switch_number*n_core
 
             Ionode=(node .eq. 0)
             if(Ionode) then
@@ -287,7 +287,7 @@ module mpi_sade
 
             n_open = node + 20
             n_log_file = n_open + 20
-            iter_switch = switch_number
+            iter_switch = switch_number*n_core
 
             Ionode=(node .eq. 0)
             if(Ionode) then
