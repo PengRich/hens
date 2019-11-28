@@ -206,7 +206,7 @@ module mpi_sade
                 ! ymin = minval(y_old)
                 ! xmin = x(:, minloc(y_old))
                 ! print *, "node", node, "completed"
-                ! print *, node, n_recv, n_switch, n_recv/n_switch
+                print *, node, n_recv, n_switch, n_recv/n_switch
             enddo
 
             call deallocate_de_parameter()
