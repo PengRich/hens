@@ -4,7 +4,8 @@ module sade
     implicit none
     integer(kind=4), parameter :: reset_std=1, debug=0
     integer(kind=4), parameter :: mutator_number=4, print_number=1000, &
-        max_learning_period=1000, max_sampling_number=10000
+        max_learning_period=1000, max_sampling_number=10000, &
+        expected_number_err=5
 
     real(kind=8), public :: y_min_global, start, finish
     integer(kind=4), public :: n_hex_global, n_open, n_log_file
@@ -115,9 +116,10 @@ module sade
             real(kind=8), intent(in) :: qmin
 
             integer(kind=4) :: i, j, k, m, strategy_id, &
-                selected_strategy_record(np)
+                selected_strategy_record(np), expected_number
             real(kind=8) :: cf, cr, ep
 
+            expected_number = sum(n_stms) + 1 + expected_number_err
             ! reset parameter
             lp = min(learning_period, max_learning_period)
 
@@ -215,11 +217,11 @@ module sade
                         if(rand(rn(1))<=cr .or. k==int(rand(rn(1))*real(n_hex))+1) u(k, j) = v(k, j)
                         if(u(k, j)>1.d-3) m = m + 1
                     enddo
-                    k = sum(n_stms) + 2 + 4 
-                    if(k>m) then
-                        ep = real(k) / real(m)
+                    if(m>expected_number) then
+                        ep = real(expected_number) / real(m)
                     else
-                        ep = 1.d0 / real(m)
+                        ! ep = real(m-1) / real(m)
+                        ep = 1.d0
                     endif
                     do k=1, n_hex
                         if(u(k, j)>qmin) then
