@@ -46,7 +46,7 @@ module de_base
             allocate(ptnl(2, maxval(n_stms)))
             allocate(match_number(2, maxval(n_stms)))
             do i=1, np
-                ! x(:, i) = 0.d0
+                x(:, i) = 0.d0
                 match_number = 0
                 ptnl = stms%ptnl
 

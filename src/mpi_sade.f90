@@ -499,9 +499,10 @@ module mpi_sade
                     xmin = x(:, minloc(y_old))
                 else
                     idx_best = minloc(y_old)
+                    print *, node, "local best", minval(y_old)
                     call MPI_SEND(x(:, idx_best(1)), n_hex, MPI_DOUBLE_PRECISION, &
                         0, 99, MPI_COMM_WORLD, ierr)
-                    call reinit_population(np, 0, 1.d0)
+                    call init_population(np)
                 endif
                 call MPI_BARRIER(MPI_COMM_WORLD, ierr)
             enddo
