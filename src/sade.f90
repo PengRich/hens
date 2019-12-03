@@ -70,6 +70,29 @@ module sade
 
         !     return
         ! end subroutine update_crm
+
+        subroutine init_de_parameter_without_allocate()
+            implicit none
+
+            ! init parameter
+            cf_normals = 0.3d0
+            cr_normals = 0.5d0
+            cr_success = 0.5d0
+            cf_success = 0.5d0
+
+            crm = 0.5d0
+            crs = 0.3d0
+            cfm = 0.5d0
+            cfs = 0.3d0
+            success_strategy = 0
+            failure_strategy = 0
+            prob_strategy = 1.d0 / real(mutator_number)
+            sum_prob_strategy = sum(prob_strategy)
+            n_lp = 0
+            n_cfr = 1
+            cfr_idx = 1
+        end subroutine init_de_parameter_without_allocate
+
         subroutine init_de_parameter(np, sampling_number)
             implicit none
             integer(kind=4), intent(in) :: np, sampling_number

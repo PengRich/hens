@@ -503,6 +503,7 @@ module mpi_sade
                     call MPI_SEND(x(:, idx_best(1)), n_hex, MPI_DOUBLE_PRECISION, &
                         0, 99, MPI_COMM_WORLD, ierr)
                     call init_population(np)
+                    call init_de_parameter_without_allocate()
                 endif
                 call MPI_BARRIER(MPI_COMM_WORLD, ierr)
             enddo
