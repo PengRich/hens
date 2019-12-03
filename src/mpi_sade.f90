@@ -470,8 +470,8 @@ module mpi_sade
                 open(unit=n_log_file, file=log_filename, action="write", status="replace")
                 call evolve(np, max_iter, qmin, learning_period)
                 close(n_log_file)
-                write(*, *) node, log_filename, n_hex_global, y_min_global
-                write(n_open, *) log_filename, n_hex_global, y_min_global
+                write(*, *) iter_switch-j+1, node, log_filename, n_hex_global, y_min_global
+                write(n_open, *) iter_switch-j+1, log_filename, n_hex_global, y_min_global
                 close(n_open)
 
                 if(node<n_core-1) then
