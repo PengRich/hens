@@ -426,7 +426,7 @@ module mpi_sade
             print *, "start process", node
             write(node0, '(i1)') node
 
-            filename = "output/"// node0 // "_para_" // trim(case_name) // "_sade.txt"
+            filename = "output/"// node0 // "_parc_" // trim(case_name) // "_sade.txt"
             inquire(file=filename, exist=exist)
             if (exist) then
                 open(n_open, file=filename, status="old", position="append", action="write")
